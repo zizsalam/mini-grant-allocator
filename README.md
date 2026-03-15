@@ -142,6 +142,32 @@ hlos run -- python -m src.main
 python verify_hlos.py
 ```
 
+## On-Chain Identity & Reputation (Solana)
+
+Each agent holds a verifiable on-chain identity as a Metaplex Core NFT registered via the `8004-solana` SDK. The treasury agent is assigned an operational Solana wallet and exposes an x402-compatible API endpoint — external agents can request grant evaluations and pay per call in USDC on Solana. After each batch run, an ATOM reputation feedback entry is written on-chain, building a tamper-proof track record of funding decision quality. The evaluator and treasury agents are registered as a collection on [8004market.io](https://8004market.io).
+
+### Solana Setup
+
+```bash
+cd solana
+npm install
+
+# Generate devnet keypair and fund it
+solana-keygen new -o keypair.json
+solana airdrop 2 $(solana-keygen pubkey keypair.json) --url devnet
+
+# Copy the keypair bytes into solana/.env as SOLANA_PRIVATE_KEY
+# Then register agents on-chain
+npm run register
+# Copy output asset addresses into solana/.env
+
+# Start x402 paid evaluation endpoint
+npm run server
+# Test: curl -X POST localhost:3000/evaluate -d '{"proposal":"test"}' → 402
+
+# ATOM reputation feedback is auto-submitted after each Python batch run
+```
+
 ## Project Structure
 
 ```
@@ -158,6 +184,12 @@ mini-grant-allocator/
 │   ├── explainer.py       # Plain-language decision explanations
 │   ├── observability.py   # Token/latency/cost tracking
 │   └── main.py            # CLI batch pipeline
+├── solana/
+│   ├── register-agents.ts # One-shot on-chain agent registration
+│   ├── x402-server.ts     # Paid evaluation API (x402 protocol)
+│   ├── feedback.ts        # ATOM reputation feedback after each batch
+│   ├── package.json
+│   └── tsconfig.json
 ├── templates/
 │   ├── index.html         # Dashboard with scores, overrides, explain
 │   └── report.html        # Batch report with observability data

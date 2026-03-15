@@ -1,0 +1,21 @@
+{
+  "name": "grant-allocator-solana",
+  "version": "1.0.0",
+  "scripts": {
+    "register": "ts-node register-agents.ts",
+    "server": "ts-node x402-server.ts",
+    "feedback": "ts-node feedback.ts"
+  },
+  "dependencies": {
+    "8004-solana": "latest",
+    "@solana/web3.js": "^1.95.0",
+    "express": "^4.18.0",
+    "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "@types/express": "^4.17.0",
+    "@types/node": "^20.0.0"
+  }
+}

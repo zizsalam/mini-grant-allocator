@@ -149,7 +149,49 @@ def main() -> None:
         for r in approved:
             print(f"    - {r.proposal_id}: ${r.amount_approved:,.2f} [{r.hlos_receipt_hash}]")
 
+    # --- Solana ATOM feedback ---
+    _submit_onchain_feedback(results, len(proposals))
+
     print()
+
+
+def _submit_onchain_feedback(results: list, total_proposals: int) -> None:
+    """Submit batch quality score to Solana via ATOM reputation feedback."""
+    try:
+        approved = sum(1 for r in results if r.decision.value == "APPROVED")
+        avg_score = sum(r.score_total for r in results) / max(len(results), 1)
+        # Quality score: weighted average of proposal scores (0-100)
+        quality = round(avg_score, 1)
+
+        import subprocess
+        import shutil
+
+        npx = shutil.which("npx")
+        if not npx:
+            return
+
+        # Check if solana/.env has TREASURY_AGENT_ASSET configured
+        solana_env = Path("solana/.env")
+        if not solana_env.exists():
+            return
+        env_content = solana_env.read_text()
+        if "TREASURY_AGENT_ASSET=''" in env_content or "TREASURY_AGENT_ASSET=" not in env_content:
+            return
+
+        print(f"\n  [Solana] Submitting ATOM feedback (quality: {quality})...", end=" ", flush=True)
+        result = subprocess.run(
+            [npx, "ts-node", "solana/feedback.ts", str(quality)],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode == 0:
+            print("done.")
+            for line in result.stdout.strip().split("\n"):
+                print(f"    {line}")
+        else:
+            print("skipped (not configured).")
+    except Exception:
+        # Solana feedback is best-effort, never block the batch
+        pass
 
 
 if __name__ == "__main__":

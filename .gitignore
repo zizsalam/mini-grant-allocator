@@ -5,3 +5,6 @@ __pycache__/
 ledger.json
 batch_report.json
 .DS_Store
+node_modules/
+solana/.env
+solana/dist/
