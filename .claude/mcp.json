@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "hlos": {
+      "command": "npx",
+      "args": ["-y", "@hlos/mcp-server"],
+      "env": {
+        "HLOS_API_URL": "https://api.hlos.ai"
+      }
+    }
+  }
+}
