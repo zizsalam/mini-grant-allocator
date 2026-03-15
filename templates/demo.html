@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agentic Grant Allocator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; }
+    .hero { text-align: center; padding: 4rem 2rem 2rem; }
+    .hero h1 { font-size: 2.5rem; font-weight: 700; color: #f8fafc; margin-bottom: 0.5rem; }
+    .hero h1 span { color: #818cf8; }
+    .hero .subtitle { font-size: 1.1rem; color: #94a3b8; max-width: 600px; margin: 0 auto 0.75rem; line-height: 1.5; }
+    .hero .track { display: inline-block; background: #1e1b4b; color: #a5b4fc; padding: 0.3rem 0.8rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 2rem; flex: 1; }
+
+    /* Architecture */
+    .arch { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2rem; margin-bottom: 2rem; }
+    .arch h2 { font-size: 1rem; font-weight: 600; color: #f8fafc; margin-bottom: 1.5rem; text-align: center; text-transform: uppercase; letter-spacing: 0.05em; }
+    .flow { display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
+    .flow-box { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 1rem 1.25rem; text-align: center; min-width: 130px; }
+    .flow-box .label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 0.35rem; }
+    .flow-box .name { font-size: 0.9rem; font-weight: 600; }
+    .flow-box.eval .name { color: #818cf8; }
+    .flow-box.skep .name { color: #f59e0b; }
+    .flow-box.coord .name { color: #2dd4bf; }
+    .flow-box.treasury .name { color: #4ade80; }
+    .flow-box.ledger .name { color: #f87171; }
+    .flow-arrow { color: #475569; font-size: 1.2rem; }
+
+    /* Service cards */
+    .services { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+    .svc { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 1.5rem; transition: border-color 0.2s; display: flex; flex-direction: column; }
+    .svc:hover { border-color: #818cf8; }
+    .svc .svc-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .svc .svc-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+    .svc .svc-icon.dashboard { background: #1e1b4b; }
+    .svc .svc-icon.api { background: #064e3b; }
+    .svc .svc-icon.chain { background: #451a03; }
+    .svc .svc-title { font-size: 1rem; font-weight: 600; color: #f8fafc; }
+    .svc .svc-desc { font-size: 0.8rem; color: #94a3b8; line-height: 1.4; margin-bottom: 1rem; flex: 1; }
+    .svc .svc-link { display: inline-block; background: #0f172a; border: 1px solid #334155; color: #818cf8; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; text-decoration: none; font-weight: 500; transition: all 0.2s; }
+    .svc .svc-link:hover { background: #1e1b4b; border-color: #818cf8; }
+
+    /* On-chain info */
+    .onchain { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; }
+    .onchain h3 { font-size: 0.85rem; font-weight: 600; color: #f8fafc; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .agent-row { display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0; border-bottom: 1px solid #334155; }
+    .agent-row:last-child { border-bottom: none; }
+    .agent-row .agent-name { font-size: 0.85rem; font-weight: 600; }
+    .agent-row .agent-name.eval { color: #818cf8; }
+    .agent-row .agent-name.treasury { color: #4ade80; }
+    .agent-row .agent-addr { font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.7rem; color: #64748b; }
+    .agent-row .agent-badge { font-size: 0.6rem; background: #064e3b; color: #4ade80; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600; }
+
+    /* Tech stack */
+    .stack { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem; }
+    .stack-chip { background: #1e293b; border: 1px solid #334155; padding: 0.35rem 0.75rem; border-radius: 8px; font-size: 0.75rem; color: #94a3b8; }
+    .stack-chip strong { color: #e2e8f0; }
+
+    /* Footer */
+    .footer { text-align: center; padding: 2rem; border-top: 1px solid #1e293b; }
+    .footer a { color: #818cf8; text-decoration: none; font-size: 0.85rem; }
+    .footer a:hover { text-decoration: underline; }
+    .footer .gh { display: inline-flex; align-items: center; gap: 0.35rem; background: #1e293b; border: 1px solid #334155; padding: 0.5rem 1rem; border-radius: 8px; margin-top: 0.75rem; }
+
+    @media (max-width: 768px) {
+      .services { grid-template-columns: 1fr; }
+      .flow { flex-direction: column; }
+      .hero h1 { font-size: 1.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1><span>&#9670;</span> Agentic Grant Allocator</h1>
+    <p class="subtitle">
+      AI agents hold budgets, evaluate proposals, and disburse funds autonomously — with verifiable on-chain identity and a complete audit trail.
+    </p>
+    <span class="track">Agentic Funding & Coordination</span>
+  </div>
+
+  <div class="container">
+    <!-- Architecture Flow -->
+    <div class="arch">
+      <h2>3-Agent Evaluation Pipeline</h2>
+      <div class="flow">
+        <div class="flow-box">
+          <div class="label">Input</div>
+          <div class="name" style="color:#94a3b8">Proposals</div>
+        </div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box eval">
+          <div class="label">Agent 1</div>
+          <div class="name">Evaluator</div>
+        </div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box skep">
+          <div class="label">Agent 2</div>
+          <div class="name">Skeptic</div>
+        </div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box coord">
+          <div class="label">Agent 3</div>
+          <div class="name">Coordinator</div>
+        </div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box treasury">
+          <div class="label">Enforcement</div>
+          <div class="name">Treasury</div>
+        </div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box ledger">
+          <div class="label">Audit</div>
+          <div class="name">Ledger</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Service Cards -->
+    <div class="services">
+      <div class="svc">
+        <div class="svc-header">
+          <div class="svc-icon dashboard">&#9670;</div>
+          <div class="svc-title">Dashboard</div>
+        </div>
+        <div class="svc-desc">
+          Run batch evaluations, view agent score comparisons, override decisions, and explore per-proposal explanations. Full observability with token/cost tracking.
+        </div>
+        <a href="/" class="svc-link">Open Dashboard &#8594;</a>
+      </div>
+      <div class="svc">
+        <div class="svc-header">
+          <div class="svc-icon api">&#9671;</div>
+          <div class="svc-title">x402 Paid API</div>
+        </div>
+        <div class="svc-desc">
+          External agents POST proposals and pay 0.10 USDC per evaluation via x402 protocol on Solana. Treasury wallet receives payments automatically.
+        </div>
+        <a href="http://localhost:3000" class="svc-link" target="_blank">View API &#8594;</a>
+      </div>
+      <div class="svc">
+        <div class="svc-header">
+          <div class="svc-icon chain">&#9672;</div>
+          <div class="svc-title">On-Chain Agents</div>
+        </div>
+        <div class="svc-desc">
+          Both agents registered as Metaplex Core NFTs on Solana devnet via 8004-solana SDK. ATOM reputation tracks batch decision quality on-chain.
+        </div>
+        <a href="https://8004market.io" class="svc-link" target="_blank">View on 8004market &#8594;</a>
+      </div>
+    </div>
+
+    <!-- On-chain Identity -->
+    <div class="onchain">
+      <h3>Registered Agents (Solana Devnet)</h3>
+      <div class="agent-row">
+        <div>
+          <div class="agent-name eval">Grant Evaluator Agent</div>
+          <div class="agent-addr">HmMASnJ7WnUM6ZeasSus6G1cnZrmgbidh3GsgiEhtMfw</div>
+        </div>
+        <div class="agent-badge">REGISTERED</div>
+      </div>
+      <div class="agent-row">
+        <div>
+          <div class="agent-name treasury">Grant Treasury Agent</div>
+          <div class="agent-addr">BPzvDy6nhPpo6afJs3tnfGndsafnmQ9jxvt6Hj6ws8xy</div>
+        </div>
+        <div class="agent-badge">REGISTERED</div>
+      </div>
+      <div class="agent-row">
+        <div>
+          <div class="agent-name" style="color:#94a3b8">Treasury Wallet</div>
+          <div class="agent-addr">AWwdEEWBvtUNS4Tv5yNYh3XSjEAsA3L7ZySeW5WpUxZs</div>
+        </div>
+        <div class="agent-badge" style="background:#1e1b4b;color:#a5b4fc">WALLET</div>
+      </div>
+    </div>
+
+    <!-- Tech Stack -->
+    <div class="stack">
+      <div class="stack-chip"><strong>Python</strong> + Flask</div>
+      <div class="stack-chip"><strong>Claude</strong> Sonnet 4.6</div>
+      <div class="stack-chip"><strong>HLOS</strong> / STAAMP</div>
+      <div class="stack-chip"><strong>Solana</strong> Devnet</div>
+      <div class="stack-chip"><strong>8004-solana</strong> SDK</div>
+      <div class="stack-chip"><strong>x402</strong> Protocol</div>
+      <div class="stack-chip"><strong>Metaplex</strong> Core NFT</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>
+      <a href="/report">View Batch Report</a> &middot;
+      <a href="http://localhost:3000/health" target="_blank">API Health</a> &middot;
+      <a href="/api/ledger">Ledger JSON</a>
+    </div>
+    <a href="https://github.com/zizsalam/mini-grant-allocator" target="_blank" class="gh">
+      &#9733; GitHub Repository
+    </a>
+  </div>
+</body>
+</html>

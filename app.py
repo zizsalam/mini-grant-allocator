@@ -93,6 +93,12 @@ def dashboard():
     return render_template("index.html", entries=entries, stats=stats, report=report)
 
 
+@app.route("/demo")
+def demo():
+    """Unified landing page — links to all services."""
+    return render_template("demo.html")
+
+
 @app.route("/run", methods=["POST"])
 def run_batch():
     """Run a fresh batch evaluation with full observability."""
