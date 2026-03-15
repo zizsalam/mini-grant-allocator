@@ -1,0 +1,13 @@
+[project]
+name = "mini-grant-allocator"
+version = "0.1.0"
+description = "Agentic grant allocation system — Phase 1+2"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.40.0",
+    "pydantic>=2.0",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+grant-allocator = "src.main:main"

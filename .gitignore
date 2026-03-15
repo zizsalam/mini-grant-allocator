@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+ledger.json
+batch_report.json
+.DS_Store

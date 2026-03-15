@@ -1,0 +1,42 @@
+[
+  {
+    "id": "PROP-001",
+    "title": "Open-Source Water Quality Monitoring Network",
+    "text": "We propose building an open-source sensor network for real-time water quality monitoring in rural communities across Sub-Saharan Africa. Our team has deployed 200+ IoT sensor nodes in Kenya over the past 3 years through our NGO WaterWatch. The system uses low-cost ESP32 microcontrollers with turbidity, pH, and conductivity sensors, transmitting data via LoRaWAN to a central dashboard. We request funding to expand to 5 new regions, train 50 local technicians, and open-source the full hardware and software stack. Expected impact: continuous monitoring for 500,000+ people. Budget breakdown: $1,500 hardware (sensors + gateways), $800 training program, $700 documentation and community building.",
+    "requested_amount": 3000,
+    "applicant_id": "APP-WW-042",
+    "submitted_at": "2026-03-10T09:00:00Z"
+  },
+  {
+    "id": "PROP-002",
+    "title": "AI-Powered Legal Aid Chatbot for Tenants",
+    "text": "We want to build a chatbot that helps tenants understand their rights. We think AI is cool and this could be big. We don't have a team yet but we're looking for co-founders. Budget: we need $5,000 for general expenses.",
+    "requested_amount": 5000,
+    "applicant_id": "APP-LA-099",
+    "submitted_at": "2026-03-11T14:30:00Z"
+  },
+  {
+    "id": "PROP-003",
+    "title": "Microplastics Filtration Research for Municipal Water Systems",
+    "text": "Our lab at MIT (Dept. of Civil and Environmental Engineering) has developed a novel ceramic membrane that removes 99.7% of microplastics from municipal water at 10x lower cost than existing solutions. We have published 3 peer-reviewed papers on the technology and hold a provisional patent. We request funding to build a pilot filtration unit and run a 6-month trial with the City of Cambridge water department, who has signed a letter of intent. Team: Dr. Sarah Chen (PI, 15 years membrane research), 2 PhD students, 1 field engineer. Budget: $2,000 materials, $1,000 lab time, $500 water testing fees.",
+    "requested_amount": 3500,
+    "applicant_id": "APP-MIT-007",
+    "submitted_at": "2026-03-11T16:00:00Z"
+  },
+  {
+    "id": "PROP-004",
+    "title": "Community Garden Blockchain Token",
+    "text": "We are launching GardenCoin, a blockchain token that incentivizes community gardening. Each time someone posts a photo of their garden on our app, they earn GardenCoins which can be redeemed for seeds. We have a Discord with 50 members. The requested amount covers smart contract audit ($3,000), marketing ($1,500), and token launch ($500). Our team consists of two web3 enthusiasts with experience in NFT projects. We believe this will revolutionize urban agriculture through decentralized incentive mechanisms.",
+    "requested_amount": 5000,
+    "applicant_id": "APP-GC-201",
+    "submitted_at": "2026-03-12T10:00:00Z"
+  },
+  {
+    "id": "PROP-005",
+    "title": "Mobile Maternal Health Platform for Rural Clinics",
+    "text": "HealthBridge is a proven mobile platform currently serving 12 rural clinics in Guatemala, providing prenatal screening protocols and emergency referral pathways. Over 18 months, we've reduced maternal complications by 34% across our partner clinics (verified by Guatemala Ministry of Health). Our team includes Dr. Maria Lopez (OB-GYN, 20 years rural health), Carlos Ruiz (lead engineer, ex-Google Health), and 3 community health workers. We request funding to add a postnatal module and expand to 20 additional clinics. Budget: $1,200 development, $1,000 clinic onboarding, $800 mobile data plans for health workers.",
+    "requested_amount": 3000,
+    "applicant_id": "APP-HB-015",
+    "submitted_at": "2026-03-12T11:30:00Z"
+  }
+]
