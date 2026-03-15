@@ -8,3 +8,4 @@ batch_report.json
 node_modules/
 solana/.env
 solana/dist/
+solana/keypair.json

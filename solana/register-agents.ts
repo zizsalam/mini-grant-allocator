@@ -1,6 +1,12 @@
 import 'dotenv/config';
-import { SolanaSDK, IPFSClient, buildRegistrationFileJson, ServiceType } from '8004-solana';
+import { SolanaSDK, ServiceType } from '8004-solana';
 import { Keypair } from '@solana/web3.js';
+
+// Raw GitHub URLs for agent metadata (< 250 bytes each)
+const REPO_RAW = 'https://raw.githubusercontent.com/zizsalam/mini-grant-allocator/main/solana';
+const EVAL_URI = `${REPO_RAW}/eval-meta.json`;
+const TREASURY_URI = `${REPO_RAW}/treasury-meta.json`;
+const COLLECTION_URI = `${REPO_RAW}/eval-meta.json`; // reuse for collection
 
 async function main() {
   const signer = Keypair.fromSecretKey(
@@ -9,66 +15,37 @@ async function main() {
 
   const sdk = new SolanaSDK({ signer });
 
-  // 1. Create collection for the grant allocator system
-  const collection = await sdk.createCollection({
-    name: 'Grant Allocator System',
-    symbol: 'GRANT',
-    description: 'Autonomous grant evaluation and disbursement agents powered by HLOS',
-    socials: { website: 'https://github.com/zizsalam/mini-grant-allocator' },
-  });
-  console.log('Collection pointer:', collection.pointer);
+  // 1. Create collection (on-chain, short URI)
+  console.log('Creating collection...');
+  const collection = await sdk.createCollection('Grant Allocator System', COLLECTION_URI);
+  const collectionKey = collection.collection;
+  console.log('Collection:', collectionKey?.toBase58() ?? '(created)');
 
   // 2. Register evaluator agent
-  const evalMeta = buildRegistrationFileJson({
-    name: 'Grant Evaluator Agent',
-    description:
-      'Scores grant proposals 0-100 across 5 dimensions (team, impact, budget, alignment, risk). ' +
-      'Returns structured JSON verdict with per-dimension rationale. ' +
-      'Part of a 3-agent panel: evaluator + skeptic + coordinator.',
-    skills: ['natural_language_processing/text_generation/text_generation'],
-    domains: ['finance/grants/grant_evaluation'],
-    services: [
-      { type: ServiceType.MCP, value: 'https://YOUR_DOMAIN/mcp' },
-    ],
-  });
-
-  const ipfs = new IPFSClient({
-    pinataEnabled: !!process.env.PINATA_JWT,
-    pinataJwt: process.env.PINATA_JWT!,
-  });
-
-  const evalCid = await ipfs.addJson(evalMeta);
-  const evalAgent = await sdk.registerAgent(`ipfs://${evalCid}`, {
-    collectionPointer: collection.pointer,
+  console.log('Registering evaluator agent...');
+  const evalAgent = await sdk.registerAgent(EVAL_URI, {
+    collectionPointer: collectionKey?.toBase58(),
   });
   console.log('EVALUATOR_AGENT_ASSET=', evalAgent.asset!.toBase58());
 
-  // 3. Register treasury agent with operational wallet
-  const treasuryMeta = buildRegistrationFileJson({
-    name: 'Grant Treasury Agent',
-    description:
-      'Holds budget, enforces constraints via HLOS wallet, disburses approved grants. ' +
-      'Budget enforcement is infrastructure-level: balance hits zero, no further approvals execute. ' +
-      'Every disbursement produces a notarized receipt with cryptographic hash.',
-    skills: ['finance/treasury/treasury_management'],
-    domains: ['finance/grants/grant_disbursement'],
-    services: [
-      { type: ServiceType.A2A, value: 'https://YOUR_DOMAIN/a2a' },
-    ],
+  // 3. Register treasury agent
+  console.log('Registering treasury agent...');
+  const treasuryAgent = await sdk.registerAgent(TREASURY_URI, {
+    collectionPointer: collectionKey?.toBase58(),
   });
 
-  const treasuryCid = await ipfs.addJson(treasuryMeta);
-  const treasuryAgent = await sdk.registerAgent(`ipfs://${treasuryCid}`, {
-    collectionPointer: collection.pointer,
-  });
-
-  // Create operational wallet for treasury agent
+  // 4. Create operational wallet for treasury
+  console.log('Setting up treasury wallet...');
   const opWallet = Keypair.generate();
   await sdk.setAgentWallet(treasuryAgent.asset!, opWallet);
 
-  console.log('TREASURY_AGENT_ASSET=', treasuryAgent.asset!.toBase58());
-  console.log('TREASURY_WALLET_PUBLIC=', opWallet.publicKey.toBase58());
-  console.log('TREASURY_WALLET_SECRET=', JSON.stringify(Array.from(opWallet.secretKey)));
+  console.log('\n========================================');
+  console.log('  Registration Complete!');
+  console.log('========================================');
+  console.log(`EVALUATOR_AGENT_ASSET=${evalAgent.asset!.toBase58()}`);
+  console.log(`TREASURY_AGENT_ASSET=${treasuryAgent.asset!.toBase58()}`);
+  console.log(`TREASURY_WALLET_PUBLIC=${opWallet.publicKey.toBase58()}`);
+  console.log(`TREASURY_WALLET_SECRET=${JSON.stringify(Array.from(opWallet.secretKey))}`);
   console.log('\nCopy the values above into solana/.env');
 }
 
