@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grant Allocator Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+    .header { background: #1e293b; border-bottom: 1px solid #334155; padding: 1.25rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 1.25rem; font-weight: 600; color: #f8fafc; }
+    .header h1 span { color: #818cf8; }
+    .header-sub { font-size: 0.7rem; color: #64748b; margin-top: 0.15rem; }
+    .header-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+    /* Cards */
+    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 0.75rem; }
+    .cards-row2 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 2rem; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem; }
+    .card .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 0.35rem; }
+    .card .value { font-size: 1.5rem; font-weight: 700; }
+    .card.approved .value { color: #4ade80; }
+    .card.rejected .value { color: #f87171; }
+    .card.disbursed .value { color: #38bdf8; }
+    .card.balance .value { color: #818cf8; }
+    .card.overrides .value { color: #c084fc; }
+    .card.human-or .value { color: #fb923c; }
+    .card.cost .value { color: #fbbf24; }
+    .card.tokens .value { color: #2dd4bf; }
+
+    /* Buttons */
+    .btn { background: #818cf8; color: #0f172a; border: none; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    .btn:hover { background: #a5b4fc; }
+    .btn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+    .btn-outline { background: transparent; border: 1px solid #475569; color: #94a3b8; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; cursor: pointer; text-decoration: none; }
+    .btn-outline:hover { border-color: #818cf8; color: #818cf8; }
+    .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.7rem; border-radius: 4px; }
+    .btn-danger { background: #991b1b; color: #fca5a5; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-green { background: #065f46; color: #6ee7b7; }
+    .btn-green:hover { background: #047857; }
+
+    /* Flash */
+    .flash { background: #1e3a5f; border: 1px solid #3b82f6; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; color: #93c5fd; font-size: 0.875rem; }
+
+    /* Table */
+    .section-title { font-size: 1rem; font-weight: 600; color: #f8fafc; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+    .table-wrap { background: #1e293b; border: 1px solid #334155; border-radius: 12px; overflow-x: auto; margin-bottom: 2rem; }
+    table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+    th { background: #334155; text-align: left; padding: 0.75rem 0.6rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; font-weight: 600; white-space: nowrap; }
+    td { padding: 0.65rem 0.6rem; border-top: 1px solid #334155; font-size: 0.8rem; vertical-align: top; }
+    tr:hover td { background: #1a2744; }
+
+    /* Score chips */
+    .scores-compare { display: flex; gap: 0.35rem; align-items: center; }
+    .score-chip { display: inline-flex; flex-direction: column; align-items: center; background: #0f172a; border-radius: 6px; padding: 0.2rem 0.4rem; min-width: 42px; }
+    .score-chip .agent-label { font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em; color: #64748b; }
+    .score-chip .agent-score { font-size: 0.9rem; font-weight: 700; }
+    .score-chip.eval .agent-score { color: #818cf8; }
+    .score-chip.skep .agent-score { color: #f59e0b; }
+    .score-chip.final .agent-score { color: #4ade80; }
+    .score-arrow { color: #475569; font-size: 0.6rem; }
+
+    /* Score bar */
+    .score-bar { display: flex; gap: 2px; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 0.2rem; width: 100px; }
+    .score-bar .seg { height: 100%; border-radius: 2px; }
+    .score-dims { font-size: 0.6rem; color: #64748b; margin-top: 0.1rem; }
+
+    /* Badges */
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 9999px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+    .badge.approved { background: #064e3b; color: #4ade80; }
+    .badge.rejected { background: #450a0a; color: #f87171; }
+    .badge.escalated { background: #451a03; color: #fbbf24; }
+    .badge-override { background: #2e1065; color: #c084fc; font-size: 0.55rem; padding: 0.1rem 0.35rem; border-radius: 4px; display: inline-block; margin-top: 0.2rem; }
+    .badge-human { background: #7c2d12; color: #fb923c; font-size: 0.55rem; padding: 0.1rem 0.35rem; border-radius: 4px; display: inline-block; margin-top: 0.2rem; }
+
+    /* Amount */
+    .amount { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .amount.zero { color: #64748b; }
+
+    /* Synthesis */
+    .synthesis { font-size: 0.7rem; color: #94a3b8; max-width: 260px; line-height: 1.3; }
+
+    /* Actions */
+    .actions { display: flex; gap: 0.25rem; flex-direction: column; }
+    .actions a, .actions button { font-size: 0.65rem; }
+
+    /* Failures */
+    .failures { display: flex; gap: 0.2rem; flex-wrap: wrap; margin-top: 0.15rem; }
+    .failures span { background: #450a0a; color: #fca5a5; font-size: 0.55rem; padding: 0.1rem 0.3rem; border-radius: 4px; }
+
+    /* Empty */
+    .empty { text-align: center; padding: 4rem 2rem; color: #64748b; }
+    .empty p { margin-bottom: 1rem; font-size: 1.1rem; }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.85); z-index: 200; justify-content: center; align-items: center; }
+    .modal-overlay.active { display: flex; }
+    .modal { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; width: 420px; max-width: 90vw; }
+    .modal h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #f8fafc; }
+    .modal label { font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 0.25rem; }
+    .modal select, .modal input, .modal textarea { width: 100%; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; border-radius: 6px; padding: 0.5rem; font-size: 0.85rem; margin-bottom: 0.75rem; }
+    .modal textarea { height: 80px; resize: vertical; }
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+    /* Loading */
+    .loading { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.85); z-index: 100; justify-content: center; align-items: center; flex-direction: column; gap: 1rem; }
+    .loading.active { display: flex; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #334155; border-top-color: #818cf8; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 900px) {
+      .cards, .cards-row2 { grid-template-columns: repeat(2, 1fr); }
+      .container { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p style="color:#94a3b8;font-size:0.9rem">Running 3-agent panel: Evaluator + Skeptic + Coordinator...</p>
+  </div>
+
+  <!-- Override Modal -->
+  <div class="modal-overlay" id="overrideModal">
+    <div class="modal">
+      <h3>Human Override</h3>
+      <form method="POST" id="overrideForm">
+        <label>New Decision</label>
+        <select name="decision">
+          <option value="APPROVED">APPROVED</option>
+          <option value="REJECTED">REJECTED</option>
+          <option value="ESCALATED">ESCALATED</option>
+        </select>
+        <label>Your Name</label>
+        <input type="text" name="override_by" placeholder="admin" value="admin" required>
+        <label>Reason for Override</label>
+        <textarea name="reason" placeholder="Explain why this decision should be changed..." required></textarea>
+        <div class="modal-actions">
+          <button type="button" class="btn-outline" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn">Apply Override</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="header">
+    <div>
+      <h1><span>&#9670;</span> Grant Allocator Dashboard</h1>
+      <div class="header-sub">3-Agent Panel: Evaluator + Skeptic + Coordinator</div>
+    </div>
+    <div class="header-actions">
+      {% if entries %}
+      <a href="/report" class="btn-outline">View Report</a>
+      {% endif %}
+      <form style="display:inline" method="POST" action="/run" onsubmit="showLoading()">
+        <button type="submit" class="btn" id="runBtn">Run Batch</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="container">
+    {% for msg in get_flashed_messages() %}
+    <div class="flash">{{ msg }}</div>
+    {% endfor %}
+
+    <!-- Summary Cards — Row 1 -->
+    <div class="cards">
+      <div class="card approved">
+        <div class="label">Approved</div>
+        <div class="value">{{ stats.approved }}</div>
+      </div>
+      <div class="card rejected">
+        <div class="label">Rejected</div>
+        <div class="value">{{ stats.rejected }}</div>
+      </div>
+      <div class="card disbursed">
+        <div class="label">Disbursed</div>
+        <div class="value">${{ '{:,.0f}'.format(stats.disbursed) }}</div>
+      </div>
+      <div class="card balance">
+        <div class="label">Balance</div>
+        <div class="value">${{ '{:,.0f}'.format(stats.balance) }}</div>
+      </div>
+    </div>
+    <!-- Row 2 -->
+    <div class="cards-row2">
+      <div class="card overrides">
+        <div class="label">Agent Overrides</div>
+        <div class="value">{{ stats.overrides }}</div>
+      </div>
+      <div class="card human-or">
+        <div class="label">Human Overrides</div>
+        <div class="value">{{ stats.human_overrides }}</div>
+      </div>
+      <div class="card cost">
+        <div class="label">LLM Cost</div>
+        <div class="value">${{ '{:.4f}'.format(stats.llm_cost) }}</div>
+      </div>
+      <div class="card tokens">
+        <div class="label">Total Tokens</div>
+        <div class="value">{{ '{:,}'.format(stats.total_tokens) }}</div>
+      </div>
+    </div>
+
+    {% if entries %}
+    <div class="section-title">
+      <span>Batch Results ({{ entries|length }} proposals)</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Proposal</th>
+            <th>Agent Scores</th>
+            <th>Breakdown</th>
+            <th>Decision</th>
+            <th>Amount</th>
+            <th>Synthesis</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in entries %}
+          <tr>
+            <td>
+              <strong>{{ e.proposal_id }}</strong>
+              {% if e.get('hlos_receipt_hash') %}
+              <br><span style="font-family:monospace;font-size:0.55rem;color:#475569">{{ e.hlos_receipt_hash }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="scores-compare">
+                {% if e.get('evaluator_score') is not none %}
+                <div class="score-chip eval">
+                  <span class="agent-label">Eval</span>
+                  <span class="agent-score">{{ e.evaluator_score }}</span>
+                </div>
+                <span class="score-arrow">&#8594;</span>
+                {% endif %}
+                {% if e.get('skeptic_score') is not none %}
+                <div class="score-chip skep">
+                  <span class="agent-label">Skep</span>
+                  <span class="agent-score">{{ e.skeptic_score }}</span>
+                </div>
+                <span class="score-arrow">&#8594;</span>
+                {% endif %}
+                <div class="score-chip final">
+                  <span class="agent-label">Final</span>
+                  <span class="agent-score">{{ e.score_total }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% set bd = e.score_breakdown %}
+              <div class="score-bar">
+                <div class="seg" style="width:{{ bd.team * 5 }}%; background:#818cf8" title="Team: {{ bd.team }}"></div>
+                <div class="seg" style="width:{{ bd.impact * 5 }}%; background:#38bdf8" title="Impact: {{ bd.impact }}"></div>
+                <div class="seg" style="width:{{ bd.budget * 5 }}%; background:#4ade80" title="Budget: {{ bd.budget }}"></div>
+                <div class="seg" style="width:{{ bd.alignment * 5 }}%; background:#fbbf24" title="Alignment: {{ bd.alignment }}"></div>
+                <div class="seg" style="width:{{ bd.risk * 5 }}%; background:#f87171" title="Risk: {{ bd.risk }}"></div>
+              </div>
+              <div class="score-dims">T:{{ bd.team }} I:{{ bd.impact }} B:{{ bd.budget }} A:{{ bd.alignment }} R:{{ bd.risk }}</div>
+              {% if e.get('dimension_failures') %}
+              <div class="failures">
+                {% for f in e.dimension_failures %}<span>{{ f }}</span>{% endfor %}
+              </div>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge {{ e.decision|lower }}">{{ e.decision }}</span>
+              {% if e.get('overrode_evaluator') %}<br><span class="badge-override">AGENT OVERRIDE</span>{% endif %}
+              {% if e.get('human_override_by') %}<br><span class="badge-human">HUMAN: {{ e.human_override_by }}</span>{% endif %}
+            </td>
+            <td>
+              <span class="amount {% if e.amount_approved == 0 %}zero{% endif %}">
+                ${{ '{:,.0f}'.format(e.amount_approved) }}
+              </span>
+              {% if e.amount_requested and e.amount_approved != e.amount_requested %}
+              <br><span style="font-size:0.6rem;color:#64748b">of ${{ '{:,.0f}'.format(e.amount_requested) }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="synthesis">
+                {% if e.get('human_override_reason') %}
+                  <strong style="color:#fb923c">Override:</strong> {{ e.human_override_reason }}
+                {% elif e.get('coordinator_synthesis') %}
+                  {{ e.coordinator_synthesis[:180] }}{% if e.coordinator_synthesis|length > 180 %}...{% endif %}
+                {% else %}
+                  {{ e.rationale[:180] }}{% if e.rationale|length > 180 %}...{% endif %}
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <div class="actions">
+                <a href="/explain/{{ e.proposal_id }}" class="btn-outline btn-sm" target="_blank">Explain</a>
+                <button class="btn-outline btn-sm" onclick="openOverride('{{ e.proposal_id }}')">Override</button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">
+      <p>No batch results yet</p>
+      <p style="font-size:0.875rem">Click <strong>Run Batch</strong> to evaluate proposals with the 3-agent panel</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <script>
+    function showLoading() {
+      document.getElementById('loading').classList.add('active');
+      document.getElementById('runBtn').disabled = true;
+    }
+    function openOverride(proposalId) {
+      document.getElementById('overrideForm').action = '/override/' + proposalId;
+      document.getElementById('overrideModal').classList.add('active');
+    }
+    function closeModal() {
+      document.getElementById('overrideModal').classList.remove('active');
+    }
+    document.getElementById('overrideModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+  </script>
+</body>
+</html>

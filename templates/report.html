@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch Report</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .header { background: #1e293b; border-bottom: 1px solid #334155; padding: 1.25rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 1.25rem; font-weight: 600; color: #f8fafc; }
+    .header h1 span { color: #818cf8; }
+    a.back { color: #818cf8; text-decoration: none; font-size: 0.875rem; }
+    a.back:hover { text-decoration: underline; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 2rem; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem; }
+    .card .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 0.35rem; }
+    .card .value { font-size: 1.5rem; font-weight: 700; color: #818cf8; }
+    .card.cost .value { color: #fbbf24; }
+    .section { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .section h2 { font-size: 0.9rem; font-weight: 600; color: #f8fafc; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 0.5rem 0.75rem; font-size: 0.7rem; text-transform: uppercase; color: #94a3b8; border-bottom: 1px solid #334155; }
+    td { padding: 0.5rem 0.75rem; font-size: 0.8rem; border-bottom: 1px solid #1e293b; }
+    tr:hover td { background: #1a2744; }
+    .mono { font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.75rem; }
+    pre { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1.25rem; font-size: 0.8rem; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; color: #94a3b8; }
+    .badge-agent { display: inline-block; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; }
+    .badge-agent.evaluator { background: #1e1b4b; color: #818cf8; }
+    .badge-agent.skeptic { background: #451a03; color: #fbbf24; }
+    .badge-agent.coordinator { background: #042f2e; color: #2dd4bf; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1><span>&#9670;</span> Batch Report</h1>
+    <a class="back" href="/">&larr; Back to Dashboard</a>
+  </div>
+
+  <div class="container">
+    {% if report and report.totals is defined %}
+    {% set t = report.totals %}
+    <div class="cards">
+      <div class="card">
+        <div class="label">Agent Calls</div>
+        <div class="value">{{ t.agent_calls }}</div>
+      </div>
+      <div class="card">
+        <div class="label">Total Tokens</div>
+        <div class="value">{{ '{:,}'.format(t.total_tokens) }}</div>
+      </div>
+      <div class="card cost">
+        <div class="label">LLM Cost</div>
+        <div class="value">${{ '{:.4f}'.format(t.llm_cost) }}</div>
+      </div>
+      <div class="card">
+        <div class="label">Total Latency</div>
+        <div class="value">{{ '{:,.0f}'.format(t.total_latency_ms) }}ms</div>
+      </div>
+    </div>
+
+    <!-- Agent Traces -->
+    <div class="section">
+      <h2>Agent Invocation Traces</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Proposal</th>
+            <th>Agent</th>
+            <th>Model</th>
+            <th>Input Tokens</th>
+            <th>Output Tokens</th>
+            <th>Latency</th>
+            <th>Est. Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for trace in report.agent_traces %}
+          <tr>
+            <td class="mono">{{ trace.proposal_id }}</td>
+            <td><span class="badge-agent {{ trace.agent }}">{{ trace.agent }}</span></td>
+            <td class="mono">{{ trace.model }}</td>
+            <td>{{ '{:,}'.format(trace.input_tokens) }}</td>
+            <td>{{ '{:,}'.format(trace.output_tokens) }}</td>
+            <td>{{ '{:,.0f}'.format(trace.latency_ms) }}ms</td>
+            <td>${{ '{:.6f}'.format(trace.cost_estimate) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if report.hlos_traces %}
+    <!-- HLOS Traces -->
+    <div class="section">
+      <h2>HLOS Operations</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Operation</th>
+            <th>Proposal</th>
+            <th>Result</th>
+            <th>Balance Before</th>
+            <th>Balance After</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for trace in report.hlos_traces %}
+          <tr>
+            <td class="mono">{{ trace.operation }}</td>
+            <td class="mono">{{ trace.proposal_id }}</td>
+            <td>{{ trace.result }}</td>
+            <td>${{ '{:,.2f}'.format(trace.balance_before) }}</td>
+            <td>${{ '{:,.2f}'.format(trace.balance_after) }}</td>
+            <td class="mono">{{ trace.timestamp[:19] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    {% if report.get('hlos_audit_log') %}
+    <!-- HLOS / STAAMP Audit Log -->
+    <div class="section">
+      <h2>HLOS / STAAMP Audit Log</h2>
+      <p style="font-size:0.75rem;color:#64748b;margin-bottom:1rem">
+        Mode: <strong style="color:#818cf8">{{ report.get('hlos_mode', 'unknown') }}</strong>
+        &mdash; Credential isolation via STAAMP. Agent never holds raw API keys.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>Resource</th>
+            <th>Result</th>
+            <th>Balance</th>
+            <th>Details</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in report.hlos_audit_log %}
+          <tr>
+            <td class="mono">{{ entry.action }}</td>
+            <td class="mono">{{ entry.resource }}</td>
+            <td>
+              <span style="color:{% if entry.result == 'success' %}#4ade80{% elif entry.result == 'denied' %}#f87171{% elif entry.result == 'error' %}#f87171{% elif entry.result == 'fallback' %}#fbbf24{% else %}#94a3b8{% endif %}">
+                {{ entry.result }}
+              </span>
+            </td>
+            <td>
+              {% if entry.balance_before or entry.balance_after %}
+              ${{ '{:,.0f}'.format(entry.balance_before) }} &rarr; ${{ '{:,.0f}'.format(entry.balance_after) }}
+              {% else %}
+              --
+              {% endif %}
+            </td>
+            <td style="font-size:0.7rem;color:#94a3b8;max-width:300px">{{ entry.details }}</td>
+            <td class="mono">{{ entry.timestamp[:19] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- Plain-Language Summary -->
+    <div class="section">
+      <h2>Plain-Language Batch Summary</h2>
+      <pre>{{ explanation }}</pre>
+    </div>
+  </div>
+</body>
+</html>
