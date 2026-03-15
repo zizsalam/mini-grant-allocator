@@ -72,6 +72,26 @@ async function verifyPayment(proof: string): Promise<boolean> {
 const app = express();
 app.use(express.json());
 
+app.get('/', (_, res) => {
+  res.json({
+    service: 'Grant Evaluator — x402 Paid API',
+    version: '1.0.0',
+    endpoints: {
+      'POST /evaluate': 'Submit a proposal for evaluation (requires x402 payment)',
+      'GET /health': 'Server health check',
+    },
+    pricing: {
+      amount: `${PRICE_USDC} USDC`,
+      network: 'solana-devnet',
+      payTo: TREASURY_WALLET,
+    },
+    agents: {
+      evaluator: process.env.EVALUATOR_AGENT_ASSET || 'not set',
+      treasury: process.env.TREASURY_AGENT_ASSET || 'not set',
+    },
+  });
+});
+
 app.post('/evaluate', async (req, res) => {
   const paymentProof = req.headers['x-payment-proof'] as string;
 
