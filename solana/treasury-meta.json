@@ -1,0 +1,13 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Grant Treasury Agent",
+  "description": "Holds budget, enforces constraints, disburses approved grants with receipt hashes.",
+  "services": [
+    {
+      "name": "A2A",
+      "endpoint": "https://github.com/zizsalam/mini-grant-allocator"
+    }
+  ],
+  "active": true,
+  "x402Support": false
+}

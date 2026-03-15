@@ -1,0 +1,13 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Grant Evaluator Agent",
+  "description": "Scores grant proposals 0-100 across 5 dimensions. Returns structured JSON verdict.",
+  "services": [
+    {
+      "name": "MCP",
+      "endpoint": "https://github.com/zizsalam/mini-grant-allocator"
+    }
+  ],
+  "active": true,
+  "x402Support": false
+}
