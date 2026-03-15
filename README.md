@@ -126,25 +126,66 @@ python -m src.main               # CLI batch run
 
 ## On-Chain Agents (Solana Devnet)
 
-Each agent is a Metaplex Core NFT registered via the `8004-solana` SDK:
+Each agent holds a verifiable on-chain identity as a Metaplex Core NFT registered via the `8004-solana` SDK. Both agents are part of the **Grant Allocator System** collection, with metadata hosted on GitHub and resolved on-chain.
 
-| Agent | Asset Address | Role |
+### Registered Agents
+
+| Agent | Asset Address | Status |
 |---|---|---|
-| **Evaluator** | `HmMASnJ7WnUM6ZeasSus6G1cnZrmgbidh3GsgiEhtMfw` | Scores proposals on 5-dimension rubric |
-| **Treasury** | `BPzvDy6nhPpo6afJs3tnfGndsafnmQ9jxvt6Hj6ws8xy` | Budget enforcement + disbursement |
-| **Treasury Wallet** | `AWwdEEWBvtUNS4Tv5yNYh3XSjEAsA3L7ZySeW5WpUxZs` | Operational wallet for payments |
+| **Grant Evaluator Agent** | [`HmMASnJ7WnUM6ZeasSus6G1cnZrmgbidh3GsgiEhtMfw`](https://explorer.solana.com/address/HmMASnJ7WnUM6ZeasSus6G1cnZrmgbidh3GsgiEhtMfw?cluster=devnet) | Registered on devnet |
+| **Grant Treasury Agent** | [`BPzvDy6nhPpo6afJs3tnfGndsafnmQ9jxvt6Hj6ws8xy`](https://explorer.solana.com/address/BPzvDy6nhPpo6afJs3tnfGndsafnmQ9jxvt6Hj6ws8xy?cluster=devnet) | Registered on devnet |
+| **Treasury Wallet** | [`AWwdEEWBvtUNS4Tv5yNYh3XSjEAsA3L7ZySeW5WpUxZs`](https://explorer.solana.com/address/AWwdEEWBvtUNS4Tv5yNYh3XSjEAsA3L7ZySeW5WpUxZs?cluster=devnet) | Operational wallet |
+| **Signer** | [`GXotM6hYwBKqNNS5YDsEjZuq1wQp9BHNYxWwfDMPxsAq`](https://explorer.solana.com/address/GXotM6hYwBKqNNS5YDsEjZuq1wQp9BHNYxWwfDMPxsAq?cluster=devnet) | Owner keypair |
 
-Viewable on [8004market.io](https://8004market.io).
+- **Program:** `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d` (8004 Agent Registry)
+- **Network:** Solana Devnet (switch to mainnet for production)
+- **Metadata:** [eval-meta.json](solana/eval-meta.json) / [treasury-meta.json](solana/treasury-meta.json) hosted on GitHub, resolved on-chain via URI
+
+### Verify On-Chain
+
+```bash
+# Check evaluator agent account
+solana account HmMASnJ7WnUM6ZeasSus6G1cnZrmgbidh3GsgiEhtMfw --url devnet
+
+# Check treasury agent account
+solana account BPzvDy6nhPpo6afJs3tnfGndsafnmQ9jxvt6Hj6ws8xy --url devnet
+
+# Check signer balance
+solana balance GXotM6hYwBKqNNS5YDsEjZuq1wQp9BHNYxWwfDMPxsAq --url devnet
+```
+
+### Register New Agents (if needed)
+
+```bash
+cd solana
+npm install
+
+# Generate devnet keypair and fund it
+solana-keygen new -o keypair.json
+solana airdrop 2 $(solana-keygen pubkey keypair.json) --url devnet
+
+# Copy keypair bytes into solana/.env as SOLANA_PRIVATE_KEY
+npm run register
+# Copy output asset addresses into solana/.env
+```
 
 ### x402 Paid API
 
-External agents can request evaluations and pay per call:
+The evaluator is exposed as a paid API using the [x402 protocol](https://x402.org). External agents POST a proposal and receive HTTP 402 with USDC payment instructions on Solana. After payment, the request flows through to the Claude-powered evaluator.
 
 ```bash
-# Without payment → 402 with instructions
+# Start the server
+cd solana && npm run server
+# Running on http://localhost:3000
+
+# Service info
+curl http://localhost:3000/
+
+# Request evaluation without payment → 402
 curl -X POST localhost:3000/evaluate \
   -H "Content-Type: application/json" \
   -d '{"proposal":"Build a water sensor network..."}'
+# Returns: { "accepts": [{ "payTo": "AWwdEE...", "maxAmountRequired": "0.10", "network": "solana-devnet" }] }
 
 # With payment proof → evaluation result
 curl -X POST localhost:3000/evaluate \
@@ -155,7 +196,17 @@ curl -X POST localhost:3000/evaluate \
 
 ### ATOM Reputation
 
-After each batch run, a quality score is submitted on-chain via ATOM feedback, building a tamper-proof track record of funding decision quality.
+After each batch run, a quality score is automatically submitted on-chain via ATOM feedback (`solana/feedback.ts`), building a tamper-proof track record of funding decision quality. The Python pipeline calls this at the end of each batch.
+
+```bash
+# Manual feedback submission
+cd solana && npx ts-node feedback.ts 85.5
+
+# Auto-submitted by Python pipeline after each batch run
+python -m src.main  # → ATOM feedback at the end
+```
+
+**Note:** Self-feedback is blocked by the 8004 protocol (agent owner cannot give feedback to their own agent). In production, external users or other agents submit feedback after using the evaluator.
 
 ---
 
